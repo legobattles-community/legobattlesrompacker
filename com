@@ -29,6 +29,7 @@ fi
 if argsparse_is_option_set setup
 then
 . "$rombuildbin/strings" load
+. "$rombuildbin/sbnk"
 mkdir -p data/mods/mods
 rom="$(realpath "${program_options[setup]}")"
 mkdir -p basedir
@@ -38,7 +39,9 @@ python3 "$rombuildbin/SDATTool.py" -u data/Sound/sound_data.sdat ./sound_data
 mkdir -p lang
 cd lang
 for i in ../data/LOC/*; do genfastlang "$i"; done
-
+cd ..
+cd sound_data/Files/BANK/
+for i in *.sbnk; do gencache "$i"; done
 
 exit
 fi
