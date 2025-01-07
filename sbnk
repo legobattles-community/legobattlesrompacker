@@ -1,0 +1,63 @@
+#!/bin/bash
+reoder(){ echo "${1:6:2}${1:4:2}${1:2:2}${1:0:2}"; }
+numtooff(){
+echo -n "00000000$(printf '%x' "$1")" | tail -c 8
+}
+num2(){
+echo -n "00000000$(printf '%x' "$1")" | tail -c 2 | tr '[:lower:]' '[:upper:]'
+}
+4bb(){
+echo $((0x$(reoder "$(head -c $1 "$file" | tail -c 4 | xxd -p)")))
+
+}
+
+gencache(){
+file="$1"
+outdir="${2:-./}/$(basename "${1//.sbnk/}")"
+[ -d "$outdir" ] && rm -r "$outdir"
+mkdir -p "$outdir/entrys"
+
+echo $outdir
+offset(){ cat "$file" | head -c $(($1+$2)) |tail -c $2| xxd -p; }
+offsetb(){ cat "$file" | head -c $(($1+$2)) |tail -c $2; }
+
+entry=$((0x$(reoder $(offset 56 4))))
+
+# echo $entry $entry
+# echo
+
+unset list
+
+head -c $((60+(entry*4))) "$file" > "$outdir/top"
+
+for i in $(seq 1 $entry)
+do
+
+type=$((0x$(reoder $(offset $((56+($i*4))) 1))))
+if ! [ $type == 0 ]
+then
+list+=( $((0x$(reoder $(offset $((57+($i*4))) 2)))) $type )
+#else
+#list+=( "" 0 )
+fi
+done
+
+echo ${list[@]} $((${#list[@]}/2)) $entry
+
+
+
+
+for i in $(seq 1 $((${#list[@]}/2)))
+do
+echo $i $((($i*2)-1))
+if [ ${list[$((($i*2)-1))]} -lt 16 ] && [ ${list[$((($i*2)-1))]} != 0 ]
+then
+offsetb ${list[$((($i*2)-2))]} 10 >"$outdir/entrys/$i"
+fi
+done
+}
+
+
+
+# cat top $(find oo | sort -V| grep '[0-9]') $(find um | sort -V | grep '[0-9]') > 1
+
