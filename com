@@ -260,7 +260,7 @@ packer(){
 
     if [ "$packroms" != "false" ]
     then
-        nitro pack -c -p "$dir/test.xml" -r "$outdir/$name.nds"
+        nitro pack -c -p "$dir/test."* -r "$outdir/$name.nds"
         [ -f "$savefile" ] && ln -s "$savefile" "$outdir/$name.sav"
     fi
 
