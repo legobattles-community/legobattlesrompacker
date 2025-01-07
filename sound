@@ -1,0 +1,60 @@
+#!/bin/bash
+. "$rombuildbin/sw2sw"
+
+
+triger=0
+copys(){
+if [ -d "sound/Files/$1/" ]
+then
+cp -fat "sound_data/Files/$1/" "sound/Files/$1/"*
+triger=1
+fi
+}
+copys BANK
+#copys SEQ
+copys SEQARK
+copys STRM
+
+
+
+
+if [ "$(echo sound/Files/BANK/*/)" != "sound/Files/BANK/*/" ]
+then
+
+for i in sound/Files/BANK/*/
+do
+# echo $i/*
+base="$(basename "$i")"
+cp -fat "sound_data/Files/BANK/$base/" "$i"/entrys/*
+
+
+cat "sound_data/Files/BANK/$base/top" $(ls -1d "sound_data/Files/BANK/$base/entrys"/* | sort -V) >"sound_data/Files/BANK/$(basename "$i").sbnk"
+done
+
+triger=1
+fi
+
+
+if [ "$(echo sound/Files/WAVARC/*/)" != "sound/Files/WAVARC/*/" ]
+then
+
+for i in sound/Files/WAVARC/*/
+do
+# echo $i/*
+base="$(basename "$i")"
+cp -fat "sound_data/Files/WAVARC/$base/" "$i"*
+
+
+swav2swar "sound_data/Files/WAVARC/$base/" "sound_data/Files/WAVARC/$(basename "$i").swar"
+done
+
+triger=1
+fi
+
+
+if [ "$triger" = "1" ]
+then
+python3 "$rombuildbin/SDATTool.py" -b data/Sound/sound_data.sdat sound_data
+
+
+fi

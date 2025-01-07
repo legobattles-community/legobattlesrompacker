@@ -1,0 +1,103 @@
+#!/bin/bash
+reoder(){ echo "${1:6:2}${1:4:2}${1:2:2}${1:0:2}"; }
+numtooff(){
+echo -n "00000000$(printf '%x' "$1")" | tail -c 8
+}
+num2(){
+echo -n "00000000$(printf '%x' "$1")" | tail -c 2 | tr '[:lower:]' '[:upper:]'
+}
+4bb(){
+echo $((0x$(reoder "$(head -c $1 "$file" | tail -c 4 | xxd -p)")))
+
+}
+
+
+swar2swav(){
+file="$1"
+out="$2"
+samplecount=$(4bb 60)
+echo $samplecount
+for i in $(seq 1 $samplecount)
+do
+if [ $i != $samplecount ]
+then
+tmp=$(4bb $((60+((i+1)*4))))
+else
+tmp=$(wc -c <"$file")
+fi
+tmp2=$(4bb $((60+(i*4))))
+
+echo $tmp $((tmp-tmp2))
+
+echo "53574156 fffe0001 $(reoder $(numtooff $(((tmp-tmp2)+24)))) 10000100 44415441 $(reoder $(numtooff $(((tmp-tmp2)+8))))" | xxd -r -p >"$out/$(num2 $((i-1))).swav"
+cat "$file" | head -c $tmp | tail -c $((tmp-tmp2)) >> "$out/$(num2 $((i-1))).swav"
+
+
+done
+}
+# swar2swav "$1" "$2"
+
+swav2swar(){
+dir="$(realpath "$1")"
+out="$2"
+samplecount="$(ls -1 "$dir" | wc -l)"
+headersize="$((60+(samplecount*4)))"
+
+echo "$1" "$2"
+echo $samplecount $headersize
+
+
+add=
+buf=$headersize
+buff=
+for i in $(seq 0 $(($samplecount-1)))
+do
+size=$(($(wc -c <"$dir/$(num2 $i).swav")-24))
+buff="$buff"" $(reoder $(numtooff $buf))"
+buf="$((buf+size))"
+
+
+add=$((add+$size))
+
+
+done
+filesize=$(((add+$headersize)))
+bottonsize=$(((add+($headersize-16))))
+echo "53574152 fffe0001 $(reoder $(numtooff $filesize)) 10000100 44415441 $(reoder $(numtooff $bottonsize)) 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 $(reoder $(numtooff $samplecount))$buff" | xxd -r -p >"$out"
+
+for i in $(seq 0 $(($samplecount-1)))
+do
+# echo $(num2 $i)
+size=$(($(wc -c <"$dir/$(num2 $i).swav")-24))
+tail -c $size "$dir/$(num2 $i).swav" >>"$out"
+
+done
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# if [ "$1" = "-u" ]
+# then
+# swar2swav "$2" "$3"
+# else
+# swav2swar "$1" "$2"
+# fi

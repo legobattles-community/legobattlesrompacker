@@ -1,0 +1,79 @@
+#!/bin/bash
+reoder(){ echo "${1:6:2}${1:4:2}${1:2:2}${1:0:2}"; }
+numtooff(){
+echo -n "00000000$(printf '%x' "$1")" | tail -c 8
+}
+
+getstring(){
+file="$1"
+o="$(cat "$file" | head -c $((($2*4)+16)) | tail -c 4 | xxd  -p)"
+i="${o:6:2}${o:4:2}${o:2:2}${o:0:2}"
+
+cat "$file" | tail -c $(($(wc -c <"$file")-(0x$i))) | tr '\n' '@' | tr '\0' '\n' | head -1 | tr '@' '\n'
+}
+#for p in {1..3063}; do echo -ne "$p\\t"; getstring ../American_English.lng $p ;  done > langmap.tsv
+setstring(){
+file="$1"
+o="$(cat "$file" | head -c $((($2*4)+16)) | tail -c 4 | xxd  -p)"
+i="${o:6:2}${o:4:2}${o:2:2}${o:0:2}"
+
+echo "$2" "$3" $i
+out="$(mktemp)"
+tmp="$(mktemp)"
+opo="$file"
+
+offset=$((($2*4)+12))
+echo $offset
+by="$(echo -n "00000000$(printf '%x' "$(wc -c <"$file")")" | tail -c 8)"
+bp="${by:6:2}${by:4:2}${by:2:2}${by:0:2}"
+echo $bp
+
+echo "$by"
+dd if="$file" of="$out" conv=notrunc bs=1 count=$(($offset))
+echo "$bp"|xxd -r -p | dd of="$out" conv=notrunc bs=1 seek=$(($offset))
+dd if="$file" of="$out" conv=notrunc bs=1 seek=$((offset+4)) skip=$(($offset + 4))
+echo -en "$3"'\0' >"$tmp"
+
+cat "$out" "$tmp" > "$opo"
+}
+genfastlang(){
+file="$(realpath "$1")"
+mkdir -p "fastcache$(basename "$file")"/split
+cd "fastcache$(basename "$file")"/split
+off="$((0x$(reoder "$(head -c 16 "$file" | tail -c 4 | xxd -p)")))"
+cat "$file" | head -c "$off" | tail -c "$((off-16))" | split -b 4
+#o=1 ;for i in * ; do mv "$i" $o; o=$((o+1)); done
+cd ..
+head -c 16 "$file" > top
+tail -c "$(($(wc -c <"$file")-$off))" "$file" > bottom
+
+cp "$file" .
+cd ..
+}
+fastsetstring(){
+touch "lang/fastcache$1/lock"
+# off="$((0x$(reoder "$(head -c 16 "lang/fastcache$1/$1" | tail -c 4 | xxd -p)")))"
+off=12268
+reoder "$(numtooff "$(($off+$(wc -c <"lang/fastcache$1/bottom")))")" | xxd -r -p >"lang/fastcache$1/split/$(ls -1 "lang/fastcache$1/split/" | head -n "$2" | tail -1)"
+echo -ne "$3""\0" >>"lang/fastcache$1/bottom"
+}
+
+
+# cat top split/* bottom > am
+if [ "$1" != "load" ]
+then
+# eval "$(find strings/ | grep '[0-9]' | awk -F/ '{print "setstring data/LOC/"$2".lng " $3 " \"$(cat "$1"/"$2"/"$3")\""}')"
+eval "$(find strings/ | grep '[0-9]' | awk -F/ '{print "fastsetstring "$2".lng " $3 " \"$(cat "$1"/"$2"/"$3")\""}')"
+
+
+
+for i in lang/*/lock
+do
+[ "$i" = "lang/*/lock" ] && break
+tmp="$(dirname "$i")"
+cat "$tmp/top" "$tmp/split/"* "$tmp/bottom" >"data/LOC/$(basename "$(dirname $i)"/*.lng)"
+done
+
+fi
+
+
