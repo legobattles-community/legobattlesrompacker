@@ -123,6 +123,10 @@ cd "$pwd"
 }
 
 unmount_work(){
+if [ "$(echo temp/*)" != "temp/*" ]
+then
+    rm -r temp
+fi
 if [ "$(echo work/*)" != "work/*" ]
 then
     cd work
@@ -229,8 +233,9 @@ mkdir -p "$outdir" builddata/mods
 packer(){
     echo "[PACKING START]" $name
 
-    upper="$(mktemp -d)"
-    workdir="$(mktemp -d)"
+    mkdir -p temp/"$name"/upper temp/"$name"/workdir
+    upper="temp/"$name"/upper"
+    workdir="temp/"$name"/workdir"
     echo "$upper"
 
 
