@@ -1,5 +1,11 @@
 # legobattlesrompacker
 A program that automates packing of mods for lego battles
+install deps
+```
+sudo apt install zip unzip xxd fuse-overlayfs
+
+```
+
 
 How to install
 ```
