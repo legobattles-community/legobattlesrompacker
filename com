@@ -15,6 +15,7 @@ argsparse_use_option no-unmount "Disables umounting of working directory" short:
 argsparse_use_option jobs "Sets the maximum amount of jobs that can be run at one time" value short:j type:uint default:6
 argsparse_use_option ingnore-hash "Ingnores the hashs so that it redoes work" short:i
 argsparse_use_option setup "Sets up the current work directory with the rom given" value type:file
+argsparse_use_option update "Updates rombuilder"
 
 argsparse_use_option overlay "An enumerated option." value default:fuse-overlayfs
 option_overlay_values=( fuse-overlayfs cp)
@@ -26,6 +27,14 @@ argsparse_parse_options "$@"
 fi
 
 overlaytype=fuse-overlayfs
+if argsparse_is_option_set update
+then
+cd "$rombuildbin"
+git stash
+git pull origin main
+
+
+fi
 if argsparse_is_option_set setup
 then
 . "$rombuildbin/strings" load
