@@ -2,7 +2,7 @@
 A program that automates packing of mods for lego battles
 install deps
 ```
-sudo apt install zip unzip xxd fuse-overlayfs
+sudo apt install zip unzip xxd fuse-overlayfs yq
 
 ```
 
