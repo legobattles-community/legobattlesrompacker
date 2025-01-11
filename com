@@ -32,6 +32,7 @@ then
 cd "$rombuildbin"
 git stash
 git pull origin main
+chmod +x "$rombuildbin"/*
 
 
 fi
