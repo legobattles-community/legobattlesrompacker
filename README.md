@@ -15,7 +15,7 @@ wget https://github.com/haroohie-club/NitroPacker/releases/download/3.0.2/NitroP
 tar -xf NitroPacker-Linux-3.0.2.tar.gz
 sudo mv NitroPacker /usr/local/bin/nitro
 rm NitroPacker-Linux-3.0.2.tar.gz
-sudo ln -s "$(realpath com)" /usr/local/com
+sudo ln -s "$(realpath com)" /usr/local/bin/com
 cd ..
 ```
 
