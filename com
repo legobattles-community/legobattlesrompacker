@@ -25,7 +25,7 @@ then
 argsparse_parse_options "$@"
 fi
 
-
+overlaytype=fuse-overlayfs
 if argsparse_is_option_set setup
 then
 . "$rombuildbin/strings" load
@@ -84,14 +84,16 @@ fi
 
 if  [ "$overlaytype" = "fuse-overlayfs" ]
 then
-    if ! command -v fuse-overlayfs >/dev/null || ! [ -a /dev/fuse ]
+    if ! command -v fuse-overlayfs >/dev/null || ! [ -w /dev/fuse ]
     then
         command -v fuse-overlayfs >/dev/null || echo "[WARRING] fuse-overlayfs not found falling back to cp"
-        [ -a /dev/fuse ] || echo "[WARRING] fuse not support by system falling back to cp"
+        if [ ! -w /dev/fuse ]; then
+            echo -e '[WARRING] /dev/fuse is not accessible falling back to cp. Change it with \nsudo chmod 0666 /dev/fuse'
+        fi
+
         overlaytype=cp
     fi
 fi
-
 
 
 
