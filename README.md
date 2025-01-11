@@ -16,6 +16,7 @@ tar -xf NitroPacker-Linux-3.0.2.tar.gz
 sudo mv NitroPacker /usr/local/bin/nitro
 rm NitroPacker-Linux-3.0.2.tar.gz
 sudo ln -s "$(realpath com)" /usr/local/bin/com
+sudo chmod +x /usr/local/bin/com
 cd ..
 ```
 
