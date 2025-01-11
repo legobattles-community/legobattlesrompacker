@@ -11,6 +11,7 @@ How to install
 ```
 git clone https://github.com/lnee94/legobattlesrompacker.git
 cd legobattlesrompacker
+chmod +x *
 wget https://github.com/haroohie-club/NitroPacker/releases/download/3.0.2/NitroPacker-Linux-3.0.2.tar.gz
 tar -xf NitroPacker-Linux-3.0.2.tar.gz
 sudo mv NitroPacker /usr/local/bin/nitro
