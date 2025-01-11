@@ -105,7 +105,7 @@ then
     fi
 fi
 
-if [ -d "$basedir" ]
+if ! [ -d "$basedir" ]
 then
 echo "[ERROR] basedir does not esist make it with --setup"
 exit
