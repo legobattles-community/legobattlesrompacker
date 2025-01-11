@@ -34,7 +34,7 @@ git stash
 git pull origin main
 chmod +x "$rombuildbin"/*
 
-
+exit
 fi
 if argsparse_is_option_set setup
 then
@@ -105,7 +105,12 @@ then
     fi
 fi
 
+if [ -d "$basedir" ]
+then
+echo "[ERROR] basedir does not esist make it with --setup"
+exit
 
+fi
 
 
 #Common functions
