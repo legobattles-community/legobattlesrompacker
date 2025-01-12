@@ -2,8 +2,21 @@
 mod="$(realpath "$1")"
 out="$(realpath "$2")"
 work="$(mktemp -d)"
+
+
+if [ -d "$mod" ]
+then
+manifest="$(cat "$mod"/manifest.toml)"
+else
 manifest="$(unzip -p "$mod" manifest.toml)"
+fi
+
 type="$(echo "$manifest" | tomlq -r .type)"
+
+
+
+
+
 echo "$mod" "$out" "$work"  "$type" "$name"
 if ! command -v uuidgen >/dev/null
 then
@@ -122,7 +135,12 @@ esac
 
 mkdir -p "$work"
 cd "$work"
+if [ -d "$mod" ]
+then
+cp -fat "$work" "$mod"/*
+else
 unzip "$mod"
+fi
 
 case "$type" in
 

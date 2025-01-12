@@ -17,8 +17,8 @@ argsparse_use_option ingnore-hash "Ingnores the hashs so that it redoes work" sh
 argsparse_use_option setup "Sets up the current work directory with the rom given" value type:file
 argsparse_use_option update "Updates rombuilder"
 
-argsparse_use_option overlay "An enumerated option." value default:fuse-overlayfs
-option_overlay_values=( fuse-overlayfs cp)
+argsparse_use_option overlay "Sets the methoid to combind the mods" short:f value default:fuse-overlayfs
+option_overlay_values=( fuse-overlayfs cp overlayfs)
 
 
 if [ "$#" != "0" ]
@@ -66,6 +66,7 @@ then
 maxjobs="${program_options[jobs]}"
 fi
 
+temp="$(mktemp -d)"
 basedir="$(realpath basedir)"
 
 savefile=""
@@ -140,16 +141,43 @@ cd "$pwd"
 }
 
 unmount_work(){
-if [ "$(echo temp/*)" != "temp/*" ]
+if ! [ "$overlaytype" = "overlayfs" ]
 then
-    rm -r temp
+if [ "$(echo "$temp"/*)" != "$temp/*" ]
+then
+    rm -r "$temp"
 fi
 if [ "$(echo work/*)" != "work/*" ]
 then
     cd work
-    umount *
-    rm -r *
+    for i in *
+    do
+    if mountpoint -q -- "$i"
+    then
+    umount "$i" || sudo umount "$i"
+    fi
+    rm -r "$i"
+    done
     cd ..
+fi
+else
+if [ "$(echo "$temp"/*)" != "$temp/*" ]
+then
+    sudo rm -r "$temp"
+fi
+if [ "$(echo work/*)" != "work/*" ]
+then
+    cd work
+    for i in *
+    do
+    if mountpoint -q -- "$i"
+    then
+    sudo umount "$i"
+    fi
+    sudo rm -r "$i"
+    done
+    cd ..
+fi
 fi
 }
 
@@ -207,7 +235,7 @@ do
             do
 
                 modbuild "$p" &
-                [ "$(jobs -rp | wc -l)" -ge $maxjobs ] && wait
+                while [ "$(jobs -rp | wc -l)" -ge $maxjobs ] ; do :  ;done
             done
             fi
 
@@ -250,9 +278,9 @@ mkdir -p "$outdir" builddata/mods
 packer(){
     echo "[PACKING START]" $name
 
-    mkdir -p temp/"$name"/upper temp/"$name"/workdir
-    upper="temp/"$name"/upper"
-    workdir="temp/"$name"/workdir"
+    mkdir -p "$temp"/"$name"/upper "$temp"/"$name"/workdir
+    upper="$temp/"$name"/upper"
+    workdir="$temp/"$name"/workdir"
     echo "$upper"
 
 
@@ -267,7 +295,19 @@ packer(){
             stacktmp="${overlaystack[$count]}":"$stacktmp"
         done
 	    fuse-overlayfs -o lowerdir="${stacktmp::-1}",upperdir="$upper",workdir="$workdir" "$dir"
-    else
+    fi
+    if [ "$overlaytype" = "overlayfs" ]
+    then
+
+        unset stacktmp
+        for count in $(seq 0 $((${#overlaystack[@]}-1)))
+        do
+            stacktmp="${overlaystack[$count]}":"$stacktmp"
+        done
+	    sudo mount -t overlay overlay -olowerdir="${stacktmp::-1}",upperdir="$upper",workdir="$workdir" "$dir"
+    fi
+    if [ "$overlaytype" = "cp" ]
+    then
         for count in $(seq 0 $((${#overlaystack[@]}-1)))
         do
             [ "$(echo "${overlaystack[$count]}"/*)" != "${overlaystack[$count]}""/*" ] && cp -fat "$dir" "${overlaystack[$count]}"/*
@@ -283,9 +323,14 @@ packer(){
     if [ "$packroms" != "false" ]
     then
         nitro pack -c -p "$dir/test."* -r "$outdir/$name.nds"
-        [ -f "$savefile" ] && ln -s "$savefile" "$outdir/$name.sav"
+        [ -a "$savefile" ] && ln -s "$savefile" "$outdir/$name.sav"
     fi
 
+    if [ "$overlaytype" = "overlayfs" ]
+    then
+
+	    sudo umount "$dir"
+    fi
 
     echo "[PACKING DONE]" $name
 
@@ -333,24 +378,37 @@ else
             k=$((k+1))
             [ $k -le $((depth+1)) ] && continue
             overlaystack+=("$t")
+            if [ "$(ls -1 "$(dirname "$t")" | wc -l)" -gt 1 ]
+            then
+                if [ "$name" = "" ]
+                then
+                    name="$(echo "$t" | awk -F/ '{print $NF}')"
+                else
+                    name+=_"$(echo "$t" | awk -F/ '{print $NF}')"
+                fi
+            fi
+
+        done
+
+        overlaystack+=( "build$(echo -n "${topacker[$1]}" | head -n $q | tail -1 | awk '{print $2}' )")
+        t="build$(echo -n "${topacker[$1]}" | head -n $q | tail -1 | awk '{print $2}' )"
+        if [ "$(ls -1 "$(dirname "$t")" | wc -l)" -gt 1 ]
+        then
             if [ "$name" = "" ]
             then
                 name="$(echo "$t" | awk -F/ '{print $NF}')"
             else
                 name+=_"$(echo "$t" | awk -F/ '{print $NF}')"
             fi
-
-        done
-
-        overlaystack+=( "build$(echo -n "${topacker[$1]}" | head -n $q | tail -1 | awk '{print $2}' )")
+        fi
         name="${name:-"Modified$q"}"
         dir="work/""$name"
         echo "$dir"
         mkdir -p "$dir"
-        echo name "$name"
+#         echo name "$name"
 #         echo "${overlaystack[@]}"
         packer &
-        [ "$(jobs -rp | wc -l)" -ge $maxjobs ] && wait
+        while [ "$(jobs -rp | wc -l)" -ge $maxjobs ] ; do : ;done
 
     done
 
