@@ -168,7 +168,7 @@ case "$type" in
           fi
         done
     fi
-    [ -f "$out/strings/American_English/$(eval "echo \$${args[0]}")" ] && echo "$name" > "$out/strings/American_English/$(eval "echo \$${args[0]}")"
+    ! [ -f "$out/strings/American_English/$(eval "echo \$${args[0]}")" ] && echo "$name" > "$out/strings/American_English/$(eval "echo \$${args[0]}")"
 
     ;;
   script)
