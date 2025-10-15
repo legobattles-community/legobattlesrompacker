@@ -3,6 +3,11 @@
 
 rombuildbin="$(dirname "$(realpath "$0")")"
 export rombuildbin
+if [ -d "$rombuildbin/bin/" ]
+then
+PATH+=:"$rombuildbin/bin/"
+export PATH
+fi
 
 . "$rombuildbin/argsparse.sh"
 
